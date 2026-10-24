@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="35"
+        tools:overrideLibrary="androidx.media3.ui,androidx.media3.exoplayer,androidx.media3.exoplayer.hls,androidx.media3.exoplayer.dash,androidx.media3.exoplayer.rtsp,androidx.media3.datasource,androidx.media3.decoder,androidx.media3.database,androidx.media3.extractor,androidx.media3.container,androidx.media3.common,androidx.media3.decoder.ffmpeg,androidx.recyclerview,androidx.appcompat,androidx.appcompat.resources,androidx.core,androidx.core.ktx,androidx.activity,androidx.fragment,androidx.lifecycle,androidx.lifecycle.process,androidx.lifecycle.runtime,androidx.lifecycle.viewmodel,androidx.lifecycle.viewmodel.ktx,androidx.lifecycle.viewmodel.savedstate,androidx.lifecycle.livedata,androidx.lifecycle.livedata.core,androidx.lifecycle.livedata.core.ktx,androidx.savedstate,androidx.emoji2,androidx.emoji2.views.helper,androidx.profileinstaller,androidx.startup,androidx.tracing,androidx.exifinterface,androidx.media,androidx.versionedparcelable,androidx.customview,androidx.customview.poolingcontainer,androidx.vectordrawable,androidx.vectordrawable.animated,androidx.drawerlayout,androidx.viewpager,androidx.loader,androidx.cursoradapter,androidx.interpolator,androidx.arch.core,androidx.constraintlayout.widget,com.bumptech.glide,com.bumptech.glide.gifdecoder,org.conscrypt" />
+
+    <application
+        android:name=".MyTVApplication"
+        android:allowBackup="true"
+        android:banner="@drawable/banner0"
+        android:icon="@drawable/logo0"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:logo="@drawable/logo0"
+        android:networkSecurityConfig="@xml/network"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TV9"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        <provider
+            android:name=".InitializerProvider"
+            android:authorities="${applicationId}.InitializerProvider"
+            android:exported="false"
+            android:initOrder="900" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

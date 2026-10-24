@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9TV — Remote Configuration &amp; Playlist Studio</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: #0d0d0d;
+            --border: #262626;
+            --text: #EEEEEE;
+            --muted: #90a4ae;
+            --accent: #0096A6;
+            --danger: #d32f2f;
+            --input-bg: #141414;
+            --input-text: #EEEEEE;
+        }
+
+        body.light-mode {
+            --bg: #FFFFFF;
+            --surface: #F5F7F9;
+            --border: #D0D7DE;
+            --text: #111111;
+            --muted: #555555;
+            --accent: #0096A6;
+            --danger: #d32f2f;
+            --input-bg: #FFFFFF;
+            --input-text: #111111;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.25rem;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.75rem;
+        }
+
+        h2 {
+            margin: 0 0 0.75rem 0;
+            font-size: 1.15rem;
+            color: var(--accent);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.35rem;
+            color: var(--muted);
+        }
+
+        input[type="text"], select, textarea {
+            background: var(--input-bg);
+            color: var(--input-text);
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            width: 100%;
+            max-width: 28rem;
+        }
+
+        textarea {
+            max-width: 100%;
+            min-height: 110px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        input[type="file"] {
+            color: var(--text);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button, input[type="button"] {
+            background: var(--accent);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        button.danger {
+            background: var(--danger);
+            color: #FFFFFF;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.6rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .status-toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--accent);
+            color: #fff;
+            padding: 0.65rem 1rem;
+            border-radius: 6px;
+            display: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title">9TV</h1>
+    <p style="margin-top: 0; margin-bottom: 1rem; color: var(--muted); font-size: 0.9rem;">
+        By <a href="https://github.com/deactivated0" target="_blank" style="color: #64b5f6; text-decoration: none;">@deactivated0</a>
+        — Remote Configuration &amp; Playlist Studio
+    </p>
+
+    <!-- 1. PLAYLIST MANAGER (ADD / EDIT / DELETE / ACTIVATE) -->
+    <div class="card">
+        <h2>Playlist Manager (Add / Edit / Delete / Switch)</h2>
+        <div id="playlists-empty" style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            No saved playlists yet. Add a playlist URL, paste M3U/TXT/JSON content below, or upload a local file.
+        </div>
+        <table id="playlists-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Source / URL</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="playlists-tbody"></tbody>
+        </table>
+
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+            <label id="pl-form-title" style="font-weight: 600; color: var(--text);">Add or Edit Playlist</label>
+            <input type="hidden" id="pl-id" value=""/>
+            <div class="row">
+                <input type="text" id="pl-name" placeholder="Playlist Name (e.g. Sports HD, My IPTV)"/>
+                <input type="text" id="pl-url" placeholder="Playlist URL (http://... or file:///sdcard/...)"/>
+            </div>
+            <label for="pl-content">Or Paste Raw Playlist Content (M3U / #genre# TXT / JSON):</label>
+            <textarea id="pl-content" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;News&quot;,Channel 1&#10;http://example.com/live.m3u8"></textarea>
+            <div class="row" style="margin-top: 0.5rem;">
+                <button id="pl-save-activate">Save &amp; Activate</button>
+                <button id="pl-save-only" class="secondary">Save Only</button>
+                <button id="pl-clear-form" class="secondary">Clear Form</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CHANNEL EDITOR (ADD / EDIT / DELETE INDIVIDUAL CHANNELS) -->
+    <div class="card">
+        <h2>Channel Editor (Add / Edit / Delete Channels in Active Playlist)</h2>
+        <div class="row">
+            <input type="hidden" id="ch-id" value="-1"/>
+            <input type="text" id="ch-title" placeholder="Channel Name (e.g. BBC World)" style="max-width: 14rem;"/>
+            <input type="text" id="ch-group" placeholder="Group (e.g. News)" style="max-width: 11rem;"/>
+            <input type="text" id="ch-logo" placeholder="Logo URL (optional)" style="max-width: 14rem;"/>
+        </div>
+        <div class="row">
+            <input type="text" id="ch-uris" placeholder="Stream URL(s), comma-separated for backup lines" style="max-width: 40rem;"/>
+            <button id="ch-save-btn">Add / Update Channel</button>
+            <button id="ch-reset-btn" class="secondary">Cancel Edit</button>
+        </div>
+        <div style="max-height: 280px; overflow-y: auto; margin-top: 0.5rem;">
+            <table id="channels-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Group</th>
+                        <th>Lines</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="channels-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. QUICK URL / FILE UPLOAD -->
+    <div class="card">
+        <h2>Quick Import (URL or Local File Upload)</h2>
+        <div class="item">
+            <label for="uri" id="uri-label">Video source URL, click Confirm to save &amp; load</label>
+            <div class="row">
+                <input type="text" id="uri" placeholder="https://example.com/playlist.m3u"/>
+                <input type="button" id="confirm-uri" value="Confirm" class="confirm"/>
+            </div>
+        </div>
+        <div class="item" style="margin-top: 0.75rem;">
+            <label for="upload-file" id="upload-file-label">Select local playlist file (.m3u, .m3u8, .txt, .json) to upload and activate</label>
+            <input type="file" id="upload-file" multiple/>
+        </div>
+    </div>
+
+    <!-- 4. PLAYER, EPG, PROXY & THEME SETTINGS -->
+    <div class="card">
+        <h2>Player, EPG, Proxy &amp; Appearance</h2>
+        <div class="row">
+            <div style="flex: 1; min-width: 240px;">
+                <label for="channel" id="channel-label">Default channel number, starting from 1 (0 means not set)</label>
+                <div class="row">
+                    <input type="text" id="channel" style="max-width: 10rem;"/>
+                    <input type="button" id="confirm-channel" value="Confirm" class="confirm"/>
+                </div>
+            </div>
+            <div style="flex: 1; min-width: 240px;">
+                <label for="epg" id="epg-label">EPG (XMLTV URL)</label>
+                <div class="row">
+                    <input type="text" id="epg" placeholder="http://example.com/epg.xml"/>
+                    <input type="button" id="confirm-epg" value="Confirm" class="confirm"/>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div style="flex: 1; min-width: 240px;">
+                <label for="proxy" id="proxy-label">Proxy Address</label>
+                <div class="row">
+                    <input type="text" id="proxy" placeholder="http://192.168.1.1:7890"/>
+                    <input type="button" id="confirm-proxy" value="Confirm" class="confirm"/>
+                </div>
+            </div>
+            <div style="flex: 1; min-width: 240px;">
+                <label for="theme-select">UI Theme &amp; Aspect Ratio</label>
+                <div class="row">
+                    <select id="theme-select" style="max-width: 15rem;">
+                        <option value="true">Dark Mode (AMOLED Black #000000)</option>
+                        <option value="false">Light Mode (White #FFFFFF)</option>
+                    </select>
+                    <select id="aspect-select" style="max-width: 11rem;">
+                        <option value="0">16:9</option>
+                        <option value="1">4:3</option>
+                        <option value="2">Original Fit</option>
+                        <option value="3">Stretch Fullscreen</option>
+                        <option value="4">Zoom / Crop</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="status-toast">Saved!</div>
+
+<script>
+    const showToast = (msg) => {
+        const el = document.getElementById('toast');
+        el.innerText = msg;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 2200);
+    };
+
+    const applyBodyTheme = (isDark) => {
+        if (isDark) {
+            document.body.classList.remove('light-mode');
+        } else {
+            document.body.classList.add('light-mode');
+        }
+    };
+
+    let currentPlaylists = [];
+    let currentChannels = [];
+    let activePlaylistId = '';
+
+    const renderPlaylists = () => {
+        const tbody = document.getElementById('playlists-tbody');
+        const table = document.getElementById('playlists-table');
+        const empty = document.getElementById('playlists-empty');
+        tbody.innerHTML = '';
+
+        if (!currentPlaylists || currentPlaylists.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
+        currentPlaylists.forEach(pl => {
+            const tr = document.createElement('tr');
+            const isActive = pl.id === activePlaylistId;
+            const srcDesc = pl.url ? pl.url : (pl.content ? `Inline Content (${pl.content.length} chars)` : 'Empty');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(pl.name || 'Playlist')}</strong></td>
+                <td style="word-break: break-all; font-size: 0.85rem; color: var(--muted);">${escapeHtml(srcDesc)}</td>
+                <td>${isActive ? '<span class="badge">Active</span>' : ''}</td>
+                <td>
+                    <div class="row" style="margin: 0;">
+                        <button onclick="activatePlaylist('${pl.id}')">Load</button>
+                        <button class="secondary" onclick="editPlaylist('${pl.id}')">Edit</button>
+                        <button class="danger" onclick="deletePlaylist('${pl.id}')">Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    const renderChannels = () => {
+        const tbody = document.getElementById('channels-tbody');
+        const table = document.getElementById('channels-table');
+        tbody.innerHTML = '';
+        if (!currentChannels || currentChannels.length === 0) {
+            table.style.display = 'none';
+            return;
+        }
+        table.style.display = 'table';
+        currentChannels.forEach((ch, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${idx + 1}</td>
+                <td><strong>${escapeHtml(ch.title)}</strong></td>
+                <td>${escapeHtml(ch.group || '')}</td>
+                <td>${(ch.uris || []).length} line(s)</td>
+                <td>
+                    <div class="row" style="margin: 0;">
+                        <button class="secondary" onclick="editChannel(${idx})">Edit</button>
+                        <button class="danger" onclick="deleteChannel(${idx})">Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    const escapeHtml = (s) => {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    };
+
+    window.activatePlaylist = async (id) => {
+        await save('/api/playlist/activate', JSON.stringify({ id }));
+        showToast('Playlist activated!');
+        setTimeout(refreshState, 400);
+    };
+
+    window.editPlaylist = (id) => {
+        const pl = currentPlaylists.find(p => p.id === id);
+        if (!pl) return;
+        document.getElementById('pl-id').value = pl.id;
+        document.getElementById('pl-name').value = pl.name || '';
+        document.getElementById('pl-url').value = pl.url || '';
+        document.getElementById('pl-content').value = pl.content || '';
+        document.getElementById('pl-form-title').innerText = 'Editing Playlist: ' + (pl.name || pl.id);
+    };
+
+    window.deletePlaylist = async (id) => {
+        await save('/api/playlist/delete', JSON.stringify({ id }));
+        showToast('Playlist deleted');
+        setTimeout(refreshState, 300);
+    };
+
+    window.editChannel = (idx) => {
+        const ch = currentChannels[idx];
+        if (!ch) return;
+        document.getElementById('ch-id').value = idx;
+        document.getElementById('ch-title').value = ch.title || '';
+        document.getElementById('ch-group').value = ch.group || '';
+        document.getElementById('ch-logo').value = ch.logo || '';
+        document.getElementById('ch-uris').value = (ch.uris || []).join(', ');
+    };
+
+    window.deleteChannel = async (idx) => {
+        await save('/api/channel/delete', JSON.stringify({ channelId: idx }));
+        showToast('Channel removed');
+        setTimeout(refreshState, 300);
+    };
+
+    const clearPlaylistForm = () => {
+        document.getElementById('pl-id').value = '';
+        document.getElementById('pl-name').value = '';
+        document.getElementById('pl-url').value = '';
+        document.getElementById('pl-content').value = '';
+        document.getElementById('pl-form-title').innerText = 'Add or Edit Playlist';
+    };
+
+    const submitPlaylist = async (activate) => {
+        const id = document.getElementById('pl-id').value.trim();
+        const name = document.getElementById('pl-name').value.trim();
+        const url = document.getElementById('pl-url').value.trim();
+        const content = document.getElementById('pl-content').value.trim();
+        if (!url && !content) {
+            showToast('Please provide a Playlist URL or raw playlist content');
+            return;
+        }
+        await save('/api/playlist/save', JSON.stringify({ id, name, url, content, activate }));
+        clearPlaylistForm();
+        showToast(activate ? 'Playlist saved & activated!' : 'Playlist saved!');
+        setTimeout(refreshState, 400);
+    };
+
+    document.getElementById('pl-save-activate').onclick = () => submitPlaylist(true);
+    document.getElementById('pl-save-only').onclick = () => submitPlaylist(false);
+    document.getElementById('pl-clear-form').onclick = clearPlaylistForm;
+
+    document.getElementById('ch-save-btn').onclick = async () => {
+        const channelId = parseInt(document.getElementById('ch-id').value, 10);
+        const title = document.getElementById('ch-title').value.trim();
+        const group = document.getElementById('ch-group').value.trim();
+        const logo = document.getElementById('ch-logo').value.trim();
+        const uris = document.getElementById('ch-uris').value.split(',').map(s => s.trim()).filter(Boolean);
+        if (!title || uris.length === 0) {
+            showToast('Enter channel title and at least 1 stream URL');
+            return;
+        }
+        await save('/api/channel/save', JSON.stringify({ channelId, title, group, logo, uris }));
+        document.getElementById('ch-id').value = '-1';
+        document.getElementById('ch-title').value = '';
+        document.getElementById('ch-group').value = '';
+        document.getElementById('ch-logo').value = '';
+        document.getElementById('ch-uris').value = '';
+        showToast('Channel saved!');
+        setTimeout(refreshState, 350);
+    };
+
+    document.getElementById('ch-reset-btn').onclick = () => {
+        document.getElementById('ch-id').value = '-1';
+        document.getElementById('ch-title').value = '';
+        document.getElementById('ch-group').value = '';
+        document.getElementById('ch-logo').value = '';
+        document.getElementById('ch-uris').value = '';
+    };
+
+    const uploadFile = document.querySelector('#upload-file');
+    uploadFile.onchange = function (e) {
+        handleFiles(e.target.files);
+    };
+
+    const handleFiles = async function (files) {
+        for (let i = 0; i < files.length; i++) {
+            await read(files[i]);
+        }
+    };
+
+    const read = async (file) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            await save('/api/playlist/save', JSON.stringify({
+                name: file.name,
+                url: 'file://' + file.name,
+                content: e.target.result,
+                activate: true
+            }));
+            showToast('Uploaded & activated ' + file.name);
+            setTimeout(refreshState, 400);
+        };
+        reader.readAsText(file);
+    };
+
+    document.querySelector('#confirm-uri').onclick = async () => {
+        const uri = document.querySelector('#uri').value.trim();
+        if (uri.length > 0) {
+            await save('/api/uri', JSON.stringify({ uri }));
+            showToast('Source URL saved & loading...');
+            setTimeout(refreshState, 500);
+        }
+    };
+
+    document.querySelector('#confirm-channel').onclick = async () => {
+        const channel = parseInt(document.querySelector('#channel').value.trim(), 10);
+        if (!isNaN(channel)) {
+            await save('/api/channel', JSON.stringify({ channel }));
+            showToast('Default channel saved!');
+        }
+    };
+
+    document.querySelector('#confirm-proxy').onclick = async () => {
+        const proxy = document.querySelector('#proxy').value.trim();
+        await save('/api/proxy', JSON.stringify({ proxy }));
+        showToast('Proxy updated!');
+    };
+
+    document.querySelector('#confirm-epg').onclick = async () => {
+        const epg = document.querySelector('#epg').value.trim();
+        await save('/api/epg', JSON.stringify({ epg }));
+        showToast('EPG updated!');
+    };
+
+    document.querySelector('#theme-select').onchange = (e) => {
+        const isDark = e.target.value === 'true';
+        applyBodyTheme(isDark);
+        save('/api/theme', JSON.stringify({ darkMode: isDark }));
+    };
+
+    document.querySelector('#aspect-select').onchange = (e) => {
+        const mode = parseInt(e.target.value, 10);
+        save('/api/aspect', JSON.stringify({ aspectRatioMode: mode }));
+    };
+
+    const save = async (url, body) => {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: body
+        });
+        return await response.text();
+    };
+
+    const refreshState = async () => {
+        try {
+            const response = await fetch('/api/settings');
+            const json = await response.json();
+            document.querySelector('#channel').value = json.channelDefault;
+            document.querySelector('#uri').value = json.channelUri || '';
+            document.querySelector('#proxy').value = json.proxy || '';
+            document.querySelector('#epg').value = json.epg || '';
+            if (json.darkMode !== undefined) {
+                document.querySelector('#theme-select').value = String(json.darkMode);
+                applyBodyTheme(json.darkMode);
+            }
+            if (json.aspectRatioMode !== undefined) {
+                document.querySelector('#aspect-select').value = String(json.aspectRatioMode);
+            }
+            activePlaylistId = json.activePlaylistId || '';
+            currentPlaylists = json.playlists || [];
+            currentChannels = json.channels || [];
+            renderPlaylists();
+            renderChannels();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    refreshState();
+</script>
+</body>
+</html>
